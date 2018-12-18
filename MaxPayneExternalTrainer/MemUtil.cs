@@ -32,12 +32,20 @@ namespace MaxPayneExternalTrainer
         Process m_p;
         IntPtr m_handle;
 
+        public MemUtil()
+        {
+            m_p = null;
+            m_handle = IntPtr.Zero;
+        }
+
         public bool OpenHandle(string name)
         {
-            m_p = Process.GetProcessesByName(name).FirstOrDefault();
+            m_p = Process.GetProcessesByName(name).First();
             if (m_p != null)
             {
                 m_handle = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION, false, m_p.Id);
+                Debug.WriteLine("Proces open");
+                return true;
             }
             return false;
         }
@@ -55,6 +63,20 @@ namespace MaxPayneExternalTrainer
             return memoryData;
         }
 
+        public IntPtr ReadPtr(IntPtr adress)
+        {
+            ulong taille = 4, ptr = 0;
+            int readed;
+            byte[] memoryData = ReadMemory(adress, taille, out readed);
+            for (int i = 3; i >= 0; i--)
+            {
+                ptr += memoryData[i];
+                if (i != 0)
+                    ptr = ptr << 8;
+            }
+            return (IntPtr)ptr;
+        }
+
         public int WritePatternFromAddr(IntPtr addr, byte[] pattern)
         {
             int writen = 0;
@@ -66,6 +88,16 @@ namespace MaxPayneExternalTrainer
         {
             if (m_p != null)
                 return m_p.MainModule.BaseAddress;
+            return IntPtr.Zero;
+        }
+
+        public IntPtr GetModuleAdresseByName(string name)
+        {
+            foreach(ProcessModule m in m_p.Modules)
+            {
+                if (m.FileName == name)
+                    return m.BaseAddress;
+            }
             return IntPtr.Zero;
         }
 
