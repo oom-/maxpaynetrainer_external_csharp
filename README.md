@@ -4,8 +4,8 @@ A simple C# external trainer for Max Payne v 1.05
 # How to use
 1. Run the game
 2. Load a save
-3. Start the trainer wait that it find the maxpayne process
-4. Check box to activate chets
+3. Start the trainer and wait that it find the maxpayne process
+4. Check boxes to activate different cheats
 
 # What it can do ?
 * Infinite Life
