@@ -12,3 +12,6 @@ A simple C# external trainer for Max Payne v 1.05
 * Infinite Stamina
 * Infinite Ammo
 * Infinite PainKiller
+
+# How it looks ?
+![MainWindows](https://raw.githubusercontent.com/oom-/maxpaynetrainer_external_csharp/master/screenshots/mainwindows.jpg)
