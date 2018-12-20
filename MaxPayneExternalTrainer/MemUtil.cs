@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -23,10 +24,17 @@ namespace MaxPayneExternalTrainer
         [DllImport("kernel32.dll")]
         public static extern bool CloseHandle(IntPtr hObject);
 
+        [DllImport("psapi.dll")]
+        public static extern bool EnumProcessModulesEx(IntPtr hProcess, IntPtr[] lphModule, ulong cb, out ulong lpcbNeeded, ulong dwFilterFlag);
+
+        [DllImport("psapi.dll")]
+        public static extern ulong GetModuleFileNameEx(IntPtr hProcess, IntPtr hModule, [Out] char[] lpFilename, ulong nSize);
+
         const int PROCESS_QUERY_INFORMATION = 0x400;
         const int PROCESS_VM_OPERATION = 0x8;
         const int PROCESS_VM_READ = 0x10;
         const int PROCESS_VM_WRITE = 0x20;
+        const int LIST_MODULES_ALL = 0x03;
         #endregion
 
         Process m_p;
@@ -40,7 +48,9 @@ namespace MaxPayneExternalTrainer
 
         public bool OpenHandle(string name)
         {
-            m_p = Process.GetProcessesByName(name).First();
+            Process[] plist = Process.GetProcessesByName(name);
+            if (plist.Length > 0)
+                m_p = plist[0];
             if (m_p != null)
             {
                 m_handle = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION, false, m_p.Id);
@@ -95,9 +105,30 @@ namespace MaxPayneExternalTrainer
         {
             foreach(ProcessModule m in m_p.Modules)
             {
-                if (m.FileName == name)
+                if (m.ModuleName == name)
                     return m.BaseAddress;
             }
+
+            //Native
+            ulong nmbrModules = 0;
+            if (EnumProcessModulesEx(m_handle, null, 0, out nmbrModules, LIST_MODULES_ALL))
+            {
+                IntPtr[] modules = new IntPtr[nmbrModules / ((ulong)IntPtr.Size)];
+                if (EnumProcessModulesEx(m_handle, modules, nmbrModules, out nmbrModules, LIST_MODULES_ALL))
+                {
+                    char[] mName = new char[1024];
+                    string cmName;
+                    foreach (IntPtr mHandle in modules)
+                    {
+                        ulong taille = GetModuleFileNameEx(m_handle, mHandle, mName, 1024);
+                        cmName = new string(mName, 0,(int)taille);
+                        cmName = Path.GetFileName(cmName);
+                        //Debug.WriteLine("Module: " + cmName);
+                        if (name == cmName)
+                            return mHandle;
+                    }
+                }
+            }    
             return IntPtr.Zero;
         }
 
